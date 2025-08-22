@@ -11,12 +11,12 @@
 #include <sys/stat.h>
 #include <errno.h>
 
-#define VERSION "1.0.0"
-#define BOMBA1		2
-#define BOMBA2  	5
-#define VALV1   	6
-#define VALV2   	8
-#define BUFFER_SIZE 	512
+#define VERSION "1.3.0"
+#define BOMBA1      2
+#define BOMBA2      5
+#define VALV1       6
+#define VALV2       8
+#define BUFFER_SIZE 512
 
 #define PORC_AGUA 0.375
 #define PORC_AFS40 0.625
@@ -76,7 +76,6 @@ int leerPesoSerial() {
     char c;
     int intentos = 0;
 
-    // leer línea completa
     while (1) {
         if (serialDataAvail(serialFd) > 0) {
             c = serialGetchar(serialFd);
@@ -88,23 +87,21 @@ int leerPesoSerial() {
             if (idx < BUFFER_SIZE - 1) buffer[idx++] = c;
         } else {
             usleep(1000);
-	    intentos++;
-	    if (intentos > 5000) { // timeout ~5s
+            intentos++;
+            if (intentos > 5000) { // timeout ~5s
                 printf("Timeout leyendo balanza\n");
                 return -1;
             }
         }
     }
-    // buscar signo '+' o '-'
+
     char *ptr = strchr(buffer, '+');
     if (!ptr) ptr = strchr(buffer, '-');
-    if (!ptr) return 0; // no encontrado
+    if (!ptr) return 0;
 
-    // saltar espacios
     ptr++;
     while (*ptr == ' ') ptr++;
 
-    // copiar número hasta punto o 'kg'
     char numero[16];
     int i = 0;
     while ((*ptr >= '0' && *ptr <= '9') && i < 15) {
@@ -113,35 +110,32 @@ int leerPesoSerial() {
     }
     numero[i] = '\0';
 
-    return atoi(numero); // retorna solo la parte entera
+    return atoi(numero);
 }
 
 // Llenado de cada etapa
 void llenarEtapa(float objetivo, float *kgActual, float *kgFluido, int pinBomba, int pinValvula) {
     digitalWrite(pinBomba, HIGH);
     digitalWrite(pinValvula, HIGH);
-    int aux = pinBomba + pinValvula;
-    if(aux == 8){
-    	printf("Bomba y válvula del agua encendidas,\n");
-    }else {
-	printf("\nBomba y válvula del ASF40 encendidas,\n");
-    }
-    printf("bomba es pin %d y válvula es pin %d\n\n", pinBomba, pinValvula);
 
-    // Tomar peso inicial de la balanza
+    if(pinBomba == BOMBA1)
+        printf("Bomba y válvula del agua encendidas (BOMBA1=%d, VALV1=%d)\n\n", pinBomba, pinValvula);
+    else
+        printf("Bomba y válvula del ASF40 encendidas (BOMBA2=%d, VALV2=%d)\n\n", pinBomba, pinValvula);
+
     float pesoInicio = leerPesoSerial();
     float objetivoEtapa = pesoInicio + objetivo;
     float pesoCambio = pesoInicio;
 
     while(*kgActual + 0.5 < objetivoEtapa) {
         float peso = leerPesoSerial();
-        if(peso >= -100 && peso <= 2000) { // rango válido
+        if(peso >= -100 && peso <= 2000) {
             *kgActual = peso;
             *kgFluido = *kgActual - pesoInicio;
-	    if(peso!=pesoCambio){
-            printf("Peso actual: %.0f kg (Etapa: %.0f kg)\n", *kgActual, *kgFluido);
-	    pesoCambio = peso;
-	    }
+            if(peso != pesoCambio){
+                printf("Peso actual: %.0f kg (Etapa: %.0f kg)\n", *kgActual, *kgFluido);
+                pesoCambio = peso;
+            }
         }
     }
 
@@ -150,9 +144,8 @@ void llenarEtapa(float objetivo, float *kgActual, float *kgFluido, int pinBomba,
     printf("\nEtapa completada. Actual total: %.0f kg\n", *kgActual);
 }
 
-// Guardar resultados en archivo con fecha y hora
+// Guardar resultados
 void guardarResultados(float kgAgua, float kgAFS40, float kgTotal) {
-    // Crear carpeta "registros" si no existe
     struct stat st = {0};
     if (stat("mezclas", &st) == -1) {
         if (mkdir("mezclas", 0777) != 0) {
@@ -161,20 +154,17 @@ void guardarResultados(float kgAgua, float kgAFS40, float kgTotal) {
         }
     }
 
-    // Nombre del archivo con timestamp
     char nombreArchivo[128];
     time_t ahora = time(NULL);
     struct tm *tm_info = localtime(&ahora);
     strftime(nombreArchivo, sizeof(nombreArchivo), "mezclas/mezcla_%Y%m%d_%H%M%S.txt", tm_info);
 
-    // Abrir archivo
     FILE *archivo = fopen(nombreArchivo, "w");
     if(!archivo) { 
         printf("Error al crear archivo '%s': %s\n", nombreArchivo, strerror(errno));
         return; 
     }
 
-    // Formato de fecha para el contenido
     char fechaStr[64];
     strftime(fechaStr, sizeof(fechaStr), "%Y-%m-%d %H:%M:%S", tm_info);
 
@@ -191,28 +181,7 @@ void guardarResultados(float kgAgua, float kgAFS40, float kgTotal) {
     printf("\nResultados guardados en archivo: %s\n", nombreArchivo);
 }
 
-float leerKgObjetivo() {
-    float kg;
-    do {
-        printf("Ingrese kg de mezcla a preparar (0 - 1500): ");
-        if(scanf("%f", &kg) != 1) {
-            printf("Error: valor no válido.\n");
-            // Limpiar buffer
-            int c; while((c = getchar()) != '\n' && c != EOF);
-            kg = -1; // Forzar repetición
-            continue;
-        }
-
-        if(kg < 0 || kg > 1500) {
-            printf("Error: el valor debe estar entre 0 y 1500.\n");
-        }
-
-    } while(kg < 0 || kg > 1500);
-
-    return kg;
-}
-
-int main() {
+int main(int argc, char *argv[]) {
     signal(SIGINT, manejarCtrlC);
     printf("\n=== Programa de mezcla de fluidos ===\n");
     printf("Versión: %s\n", VERSION);
@@ -227,15 +196,25 @@ int main() {
     serialFd = configurarSerial("/dev/ttyUSB0");
     if(serialFd == -1) return 1;
 
-    float kgObjetivo, kgActual = 0, kgAgua = 0, kgAFS40 = 0;
+    if(argc < 2) {
+        printf("Uso: %s <kg_objetivo>\n", argv[0]);
+        return 1;
+    }
 
-    kgObjetivo = leerKgObjetivo();  // Llamada a la función fuera de main
+    float kgObjetivo = atof(argv[1]);
+    if(kgObjetivo <= 0 || kgObjetivo > 1500) {
+        printf("Error: kg objetivo debe estar entre 0 y 1500.\n");
+        return 1;
+    }
+
     printf("\nValor aceptado: %.0f kg\n\n", kgObjetivo);
 
-    // Etapa 1: 62.5% Agua
+    float kgActual = 0, kgAgua = 0, kgAFS40 = 0;
+
+    // Etapa 1: Agua
     llenarEtapa(kgObjetivo * PORC_AGUA, &kgActual, &kgAgua, BOMBA1, VALV1);
 
-    // Etapa 2: 37.5% AFS40
+    // Etapa 2: AFS40
     llenarEtapa(kgObjetivo * PORC_AFS40, &kgActual, &kgAFS40, BOMBA2, VALV2);
 
     printf("\nProceso terminado.\n");
@@ -244,20 +223,19 @@ int main() {
     printf("Mezcla total:\t%.0f kg\n", kgAgua+kgAFS40);
 
     guardarResultados(kgAgua, kgAFS40, kgActual);
+
     printf("\ncgh 8.25 ");
-    srand(time(NULL));  // semilla aleatoria
+    srand(time(NULL));
     for(int i = 0; i < 4; i++) {
-    char c;
-    int tipo = rand() % 3;  // 0 = número, 1 = mayúscula, 2 = minúscula
-    if (tipo == 0)
-        c = '0' + rand() % 10;
-    else if (tipo == 1)
-        c = 'A' + rand() % 26;
-    else
-        c = 'a' + rand() % 26;
-    printf("%c", c);
+        char c;
+        int tipo = rand() % 3;
+        if (tipo == 0) c = '0' + rand() % 10;
+        else if (tipo == 1) c = 'A' + rand() % 26;
+        else c = 'a' + rand() % 26;
+        printf("%c", c);
     }
     printf("\n\n");
+
     close(serialFd);
     return 0;
 }

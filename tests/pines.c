@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 int main(void) {
-    int pines[] = {2, 5, 6, 8};
+    int pines[] = {0, 1, 2, 3, 4, 5, 6};
     int i;
 
     if (wiringPiSetup() == -1) {
@@ -11,7 +11,7 @@ int main(void) {
     }
 
     // Configurar pines como salida
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < 7; i++) {
         pinMode(pines[i], OUTPUT);
         digitalWrite(pines[i], LOW);
     }

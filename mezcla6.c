@@ -89,8 +89,8 @@ static Config cfg = {
 
     .msgTodoApagado         = "** TODAS LAS SALIDAS APAGADAS **",
     .msgTarado              = "Cuidado al tarar la balanza durante el proceso, esto se debe realizar antes de iniciar el programa.",
-    .msgFlowStartWarn       = "Aviso: el switch de flujo no estaba en 0 al inicio de la etapa.",
-    .msgFlowDropWarn        = "Aviso: switch de flujo %d pasó a 0 durante la etapa.",
+    .msgFlowStartWarn       = "Aviso: el switch de flujo estaba prendido al inicio de la etapa.",
+    .msgFlowDropWarn        = "Aviso: switch de flujo %d se apago y durante la etapa.",
     .msgFlowOppositeErr     = "ERROR: switch de la bomba contraria %d activado durante la etapa.",
     .msgSerialTimeout       = "Timeout leyendo balanza.",
     .msgResultadosGuardados = "Resultados guardados en archivo: %s"

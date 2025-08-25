@@ -1,0 +1,7 @@
+ERROR DE PROCESO
+----------------
+Fecha: 2025-08-25 10:32:07
+Cuidado al tarar la balanza durante el proceso,
+esto se debe realizar antes de iniciar el programa.
+Peso actual: 1.6 kg
+Etapa (kgFluido): -435.3 kg

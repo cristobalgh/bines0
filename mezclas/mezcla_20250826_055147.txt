@@ -1,0 +1,6 @@
+Reporte de mezcla
+-----------------
+Fecha: 2025-08-26 05:51:47
+Agua (bomba 1): 14.7 kg
+AFS40 (bomba 2): 25.0 kg
+Mezcla total: 493.7 kg

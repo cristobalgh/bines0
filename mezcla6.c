@@ -99,7 +99,7 @@ static Config cfg = {
 // ================== GLOBALES ==================
 static int serialFd = -1;
 
-// ================== UTILIDADES I/O CONSOLA ==================
+/*// ================== UTILIDADES I/O CONSOLA ==================
 static float leerFloatDefault(const char *mensaje, float valorDefault) {
     char buffer[128];
     printf("%s [%.3f]: ", mensaje, valorDefault);
@@ -115,6 +115,7 @@ static int leerIntDefault(const char *mensaje, int valorDefault) {
     if (fgets(buffer, sizeof(buffer), stdin) == NULL || buffer[0] == '\n') return valorDefault;
     return atoi(buffer);
 }
+*/
 
 // ================== SISTEMA ==================
 static void apagarTodo(void) {
@@ -203,8 +204,9 @@ static void guardarResultados(float kgAgua, float kgAFS40, float kgTotal) {
         fechaStr, kgAgua, kgAFS40, kgTotal);
 
     fclose(f);
+    printf("\033[1;32m");
     printf(cfg.msgResultadosGuardados, nombreArchivo);
-    printf("\n");
+    printf("\033[0m\n");
     fflush(stdout);
 }
 
@@ -303,13 +305,16 @@ static void llenarEtapa(
     digitalWrite(pinBomba, HIGH);
     digitalWrite(pinValvula, HIGH);
 
+    if (pinBomba == cfg.bomba1) printf("Bomba y válvula del agua encendidas\n");
+    else                        printf("Bomba y válvula del AFS40 encendidas\n");
+
     printf("Esperando que switch de flujo %d se active...\n", flujoPin);
     while (digitalRead(flujoPin) != 1) { usleep(cfg.serialSleepUs); }
     printf("Switch de flujo %d activado.\n", flujoPin);
 
-    if (pinBomba == cfg.bomba1) printf("Bomba y válvula del agua encendidas\n\n");
+   /* if (pinBomba == cfg.bomba1) printf("Bomba y válvula del agua encendidas\n\n");
     else                        printf("Bomba y válvula del AFS40 encendidas\n\n");
-
+*/
     float pesoInicio = leerPesoSerial();
     *kgActual = pesoInicio;
     *kgFluido = 0.0f;
@@ -358,15 +363,15 @@ static void llenarEtapa(
 
     digitalWrite(pinBomba, LOW);
     digitalWrite(pinValvula, LOW);
-    printf("\nEtapa completada. Actual total: %.1f kg\n", *kgActual);
+    printf("Etapa completada. Actual total: %.1f kg\n", *kgActual);
 }
 
 // ================== MENÚ INTERACTIVO ==================
-static void configurarPorConsola(void) {
+/*static void configurarPorConsola(void) {
     printf("=== Configuración inicial (Enter = mantener valor) ===\n");
 
     // Kg objetivo por defecto para esta corrida
-    cfg.kgObjetivoDefault = leerFloatDefault("Kg objetivo", cfg.kgObjetivoDefault);
+    cfg.kgObjetivoDefault = leerFloatDefault("kg objetivo", cfg.kgObjetivoDefault);
 
     // Porcentajes (deben sumar 1.0). No normalizamos automáticamente (según pedido).
     while (1) {
@@ -387,7 +392,7 @@ static void configurarPorConsola(void) {
 
     // Pines switches flujo
     cfg.flujo1 = leerIntDefault("Pin switch flujo 1 (WiringPi)", cfg.flujo1);
-   cfg.flujo2 = leerIntDefault("Pin switch flujo 2 (WiringPi)", cfg.flujo2);
+    cfg.flujo2 = leerIntDefault("Pin switch flujo 2 (WiringPi)", cfg.flujo2);
 
     // Tolerancias
     cfg.toleranciaKg = leerFloatDefault("Tolerancia etapa (kg)", cfg.toleranciaKg);
@@ -398,14 +403,14 @@ static void configurarPorConsola(void) {
     printf("Bomba1/Valv1: %d/%d | Bomba2/Valv2: %d/%d\n", cfg.bomba1, cfg.valv1, cfg.bomba2, cfg.valv2);
     printf("Flujo1/Flujo2: %d/%d\n", cfg.flujo1, cfg.flujo2);
     printf("Tolerancia kg: %.3f\n\n", cfg.toleranciaKg);
-}
+}*/
 
 // ================== MAIN ==================
 int main(int argc, char *argv[]) {
     signal(SIGINT, manejarCtrlC);
 
-    printf("\n=== Programa de mezcla de fluidos ===\n");
-    printf("Versión: %s\n\n", cfg.version);
+    printf("=== Programa de mezcla de fluidos ===\n");
+    printf("Versión: %s\n", cfg.version);
 
     // Menú interactivo (puedes comentar esta línea si prefieres usar solo argumentos)
 //    configurarPorConsola();
@@ -472,14 +477,14 @@ int main(int argc, char *argv[]) {
     guardarResultados(kgAgua, kgAFS40, kgActual);
 
     // Mensaje final tipo "firma"
-    printf("\ncgh 8.25 ");
+    printf("cgh 8.25 ");
     srand((unsigned)time(NULL));
     for (int i = 0; i < 4; i++) {
         int t = rand() % 3;
         char c = (t == 0) ? ('0' + rand()%10) : (t == 1) ? ('A' + rand()%26) : ('a' + rand()%26);
         putchar(c);
     }
-    printf("\n\n");
+    printf("\n");
 
     close(serialFd);
     return 0;

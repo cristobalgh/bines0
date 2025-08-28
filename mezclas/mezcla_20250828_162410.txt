@@ -1,0 +1,5 @@
+Reporte de mezcla
+Fecha: 2025-08-28 16:24:10
+Agua: 5.9 kg
+AFS40: 4.2 kg
+Total: 462.7 kg
